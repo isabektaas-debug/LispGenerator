@@ -348,20 +348,20 @@
                 let desc = "";
                 let cmd = "";
                 // Şablon içerikleri (Kısaltıldı, mantık aynı)
-                if (type === 'ruler') { cmd = 'akilli_cetvel'; desc = 'Bir ölçüm aracı yap...'; }
-                else if (type === 'layers') { cmd = 'katman_metraj'; desc = 'Ekranda bir seçim penceresi açarak...'; }
-                else if (type === 'numbering') { cmd = 'oto_no'; desc = 'Otomatik numaralandırma komutu...'; }
-                else if (type === 'area') { cmd = 'toplam_alan'; desc = 'Çoklu alan hesabı...'; }
-                else if (type === 'coords') { cmd = 'kord_yaz'; desc = 'Ekranda tıkladığım noktanın Koordinatlarını...'; }
-                else if (type === 'parceltable') { cmd = 'alan_tablo'; desc = 'Otomatik Parsel Alan Tablosu...'; }
-                else if (type === 'slope') { cmd = 'egim_yaz'; desc = 'İki nokta arası eğim hesabı...'; }
-                else if (type === 'hatch') { cmd = 'sev_tarama'; desc = 'Basit Şev Taraması...'; }
-                else if (type === 'txt_import') { cmd = 'nokta_oku'; desc = 'TXT dosyasından nokta içe aktar...'; }
-                else if (type === 'txt_export') { cmd = 'nokta_yaz'; desc = 'Koordinat dışa aktar...'; }
-                else if (type === 'z_zero') { cmd = 'z_sifir'; desc = '3 Boyutlu çizgileri 2 Boyuta indirme...'; }
-                else if (type === 'interpolate') { cmd = 'ara_kot'; desc = 'Matematiksel Enterpolasyon...'; }
-                else if (type === 'facade') { cmd = 'cephe_yaz'; desc = 'Otomatik Cephe Yazısı...'; }
-                else if (type === 'write_z') { cmd = 'kot_yaz'; desc = 'Kot (Z) Değerini Yazıya Çevir...'; }
+                if (type === 'ruler') { cmd = 'akilli_cetvel'; desc = 'Bir ölçüm aracı yap. Başlangıç noktasını sol tık ile seçeyim. Sonraki her sol tık yaptığımda, bir önceki nokta ile aradaki mesafeyi ölçsün ve "Parça: X.XX" olarak komut satırına yazsın. Arka planda bu mesafeleri toplasın. Enter tuşuna bastığımda (veya sağ tık yaptığımda) komut sonlansın ve o ana kadar ölçülen çizgilerin "TOPLAM UZUNLUĞU"nu belirgin şekilde yazsın.'; }
+                else if (type === 'layers') { cmd = 'katman_metraj'; desc = 'Ekranda bir seçim penceresi açarak (ssget) çizimleri seçmemi sağla. Seçtiğim alandaki tüm Line, Polyline ve LWPolyline çizgilerinin uzunluklarını hesapla. Ancak bunları Katmanlarına (Layer) göre gruplandır. Sonuç olarak komut satırına liste halinde: "Katman A: 50.00 birim", "Katman B: 120.50 birim" şeklinde döküm ver. En alta da tüm katmanların genel toplam uzunluğunu yaz.'; }
+                else if (type === 'numbering') { cmd = 'oto_no'; desc = 'Otomatik numaralandırma komutu. Önce benden bir başlangıç sayısı (tamsayı) ve yazı yüksekliği istesin. Sonra ekranda her sol tıkladığım noktaya bu sayıyı Text olarak yerleştirsin ve sayıyı otomatik olarak 1 arttırsın. Komuttan ESC veya Enter ile çıkana kadar numaralandırma devam etsin.'; }
+                else if (type === 'area') { cmd = 'toplam_alan'; desc = 'Çoklu alan hesabı. Seçim penceresi ile birden fazla kapalı Poligon (LWPolyline) seçmeme izin ver. Seçilen bu kapalı alanların her birinin alanını hesaplayıp topla. Sonucu metrekare (m2) cinsinden (çizimin cm olduğu varsayılarak) komut satırına ve ekrana bir Alert kutusu ile yazdır.'; }
+                else if (type === 'coords') { cmd = 'kord_yaz'; desc = 'Ekranda tıkladığım noktanın Koordinatlarını (Y ve X) al. Haritacılık standartlarına uygun olarak, önce Y (Sağa değer/Easting) değerini, altına X (Yukarı değer/Northing) değerini yazacak şekilde bir Leader (Ok) oluştur. Metin yüksekliğini kullanıcıya sor. Koordinatları virgülden sonra 3 hane hassasiyetle yaz.'; }
+                else if (type === 'parceltable') { cmd = 'alan_tablo'; desc = 'Otomatik Parsel Alan Tablosu. Ekranda seçim penceresi ile birden fazla kapalı Poligon (Parsel) seçeyim. Seçilen her bir parselin içine sıra numarası (1, 2, 3...) yaz. Ardından ekranda boş bir yere tıkladığımda oraya basit bir tablo çiz. Tabloda "Parsel No" ve "Alan (m2)" sütunları olsun. En alt satırda "TOPLAM ALAN" değeri yer alsın.'; }
+                else if (type === 'slope') { cmd = 'egim_yaz'; desc = 'İki nokta arası eğim hesabı. Benden 3 Boyutlu (Z değeri olan - Kotlu) iki nokta seçmemi iste. Bu iki nokta arasındaki Kot Farkını (Delta Z) ve Yatay Mesafeyi hesapla. Formül: (Kot Farkı / Yatay Mesafe) * 100. Sonucu "% [Değer]" formatında, virgülden sonra 2 hane olacak şekilde, iki noktanın tam ortasına Text olarak yazdır.'; }
+                else if (type === 'hatch') { cmd = 'sev_tarama'; desc = 'Basit Şev Taraması. Benden iki adet Poligon (veya Line) seçmemi iste: Biri "Üst Çizgi" (Şev Başı), diğeri "Alt Çizgi" (Şev Eteği). Kullanıcıdan bir tarama aralığı (mesafe) iste. Bu iki çizgi arasına, belirtilen aralıklarla dik çizgiler at. Çizgiler bir uzun (tam boy), bir kısa (yarım boy) olacak şekilde sıralansın (Şev sembolojisi).'; }
+                else if (type === 'txt_import') { cmd = 'nokta_oku'; desc = 'TXT dosyasından nokta içe aktar (Import). Kullanıcıdan bir dosya seçme penceresi açmasını iste (getfiled). Seçilen .txt dosyasını satır satır oku. Dosya formatının "NoktaNo Y(Sağa) X(Yukarı) Z(Kot)" şeklinde (boşluk veya tab ile ayrılmış) olduğunu varsay. Her satırdaki koordinata bir POINT (Nokta) objesi çiz. DİKKAT: Haritacılıkta Y önce gelir ama AutoCAD X,Y sırasında çalışır; bu yüzden okuduğun Y ve X değerlerinin yerini değiştirerek çizim yap. Ayrıca noktanın yanına "NOKTA_NO" layerında nokta numarasını, "KOT" layerında Z değerini yaz.'; }
+                else if (type === 'txt_export') { cmd = 'nokta_yaz'; desc = 'Koordinat dışa aktar (Export). Ekranda seçilen Nokta (Point) veya Blok objelerinin koordinatlarını al. Kullanıcının belirleyeceği bir .txt dosyasına "NoktaNo Y(Sağa) X(Yukarı) Z(Kot)" formatında yazdır. Haritacılık standardı gereği önce Y, sonra X yazılmalı.'; }
+                else if (type === 'z_zero') { cmd = 'z_sifir'; desc = '3 Boyutlu çizgileri 2 Boyuta indirme (Flatten). Ekranda seçilen tüm nesnelerin (Line, Polyline, Arc, Circle, Point) Z (Elevation) değerlerini 0.0 yap. Özellikle "Start Z" ve "End Z" değerlerini sıfırlayarak çizimi tamamen "ütüle". Bu sayede 3B gelen dosyalarla çalışmak kolaylaşsın.'; }
+                else if (type === 'interpolate') { cmd = 'ara_kot'; desc = 'Matematiksel Enterpolasyon (Ara Değer Bulma). Benden kotlu (Z değeri olan) iki nokta (Point) seçmemi iste. Bu iki noktanın Z değerlerini oku. Sonra benden "Aranan Kot Değeri"ni girmemi iste. Bu iki nokta arasındaki eğimi hesaplayarak, girdiğim kotun bu doğru üzerinde tam olarak nereye denk geldiğini bul ve oraya yeni bir Point (Nokta) at. Noktanın Z değerini de hesaplanan kot yap.'; }
+                else if (type === 'facade') { cmd = 'cephe_yaz'; desc = 'Otomatik Cephe Yazısı (NetCAD Stili). Benden bir Poligon (LWPolyline) seçmemi iste. Bu poligonun her bir kenar uzunluğunu hesapla ve kenarın tam ortasına, kenara paralel (hizalı) olacak şekilde Text olarak yazdır. Yazıları çizginin biraz dışına ötele ki çizginin üstüne binmesin. Yazı yüksekliğini sor. Uzunlukları 2 ondalık hane ile yaz.'; }
+                else if (type === 'write_z') { cmd = 'kot_yaz'; desc = 'Kot (Z) Değerini Yazıya Çevir. Ekranda seçilen Point (Nokta) objelerinin (veya Polyline köşelerinin) Z (Elevation) değerini oku. Bu değeri, noktanın hemen yanına Text (Yazı) objesi olarak yazdır. Yazı yüksekliğini kullanıcıya sor. Kot değerini 2 ondalık hane hassasiyetle yaz.'; }
                 
                 setCommandName(cmd);
                 setDescription(desc);
@@ -396,15 +396,16 @@
                     </div>
                     
                     <div className="flex items-center gap-3">
-                        <div className={`hidden md:flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded border transition-all ${
+                        {/* Günlük Limit Göstergesi - ARTIK MOBİLDE DE GÖRÜNÜR */}
+                        <div className={`flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded border transition-all ${
                         remainingUsage === 0 
                             ? 'text-red-400 bg-red-900/30 border-red-500/30' 
                             : 'text-emerald-400 bg-emerald-900/30 border-emerald-500/30'
                         }`}>
                         <Icons.BatteryCharging className="w-3.5 h-3.5" />
-                        <span>Günlük Hak: {remainingUsage}/{MAX_DAILY_LIMIT}</span>
+                        <span>{remainingUsage}/{MAX_DAILY_LIMIT}</span>
                         </div>
-                        <div className="hidden md:flex text-xs font-mono text-indigo-400 bg-indigo-900/30 px-3 py-1.5 rounded border border-indigo-500/30">v1.9.2</div>
+                        <div className="hidden md:flex text-xs font-mono text-indigo-400 bg-indigo-900/30 px-3 py-1.5 rounded border border-indigo-500/30">v1.9.3</div>
                     </div>
                     </div>
                 </header>
@@ -607,6 +608,7 @@
                         </div>
                     </div>
                     
+                    {/* Guide / Instructions */}
                     <div className="mt-6 bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
                         <h4 className="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2"><Icons.Save className="w-4 h-4" />Nasıl Kullanılır?</h4>
                         <ol className="text-xs text-slate-400 space-y-1 ml-5 list-decimal">
