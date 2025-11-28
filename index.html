@@ -342,7 +342,7 @@
             const downloadLspFile = () => {
                 if (!generatedCode) return;
                 const element = document.createElement("a");
-                const file = new Blob([generatedCode], {type: 'text/plain'});
+                const file = new Blob([generatedCode], {type: 'application/octet-stream'});
                 element.href = URL.createObjectURL(file);
                 element.download = `${commandName}.lsp`;
                 document.body.appendChild(element);
