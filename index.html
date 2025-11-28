@@ -339,16 +339,62 @@
                 document.body.removeChild(textArea);
             };
 
+            // MOBİL UYUMLU İNDİRME FONKSİYONU
             const downloadLspFile = () => {
                 if (!generatedCode) return;
-                const element = document.createElement("a");
-                const file = new Blob([generatedCode], {type: 'application/octet-stream'});
-                element.href = URL.createObjectURL(file);
-                element.download = `${commandName}.lsp`;
-                document.body.appendChild(element);
-                element.click();
-                document.body.removeChild(element);
+                
+                const fileName = `${commandName}.lsp`;
+                
+                // Mobil cihaz kontrolü
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                
+                // application/octet-stream MIME tipi, tarayıcının dosyayı
+                // metin olarak işlemesini engelleyerek .txt eklenmesini önler
+                const mimeType = 'application/octet-stream';
+                const blob = new Blob([generatedCode], { type: mimeType });
+                
+                // iOS Safari için özel işlem
+                if (isIOS) {
+                    // iOS'ta FileReader ile base64'e çevirip data URL kullan
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const link = document.createElement('a');
+                        link.href = reader.result;
+                        link.download = fileName;
+                        link.style.display = 'none';
+                        document.body.appendChild(link);
+                        link.click();
+                        
+                        // Biraz gecikme ile temizle
+                        setTimeout(() => {
+                            document.body.removeChild(link);
+                        }, 100);
+                    };
+                    reader.readAsDataURL(blob);
+                } else {
+                    // Android ve diğer tarayıcılar için standart yöntem
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = fileName;
+                    
+                    // Content-Disposition header'ını simüle etmek için
+                    // link attribute'larını ayarla
+                    link.setAttribute('type', mimeType);
+                    link.style.display = 'none';
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    
+                    // Temizlik
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                }
 
+                // Formu temizle
                 setCommandName('');
                 setDescription('');
                 setGeneratedCode('');
@@ -438,7 +484,7 @@
                         </div>
 
                         <div className="hidden md:flex text-xs font-mono text-indigo-400 bg-indigo-900/30 px-3 py-1.5 rounded border border-indigo-500/30">
-                        v1.9.0
+                        v1.9.1
                         </div>
                     </div>
                     </div>
