@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LispGenerator - Ultimate</title>
+    
+    <!-- FAVICON (SİMGE) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='4' width='16' height='16' rx='2'/%3E%3Crect x='9' y='9' width='6' height='6'/%3E%3Cpath d='M15 2v2'/%3E%3Cpath d='M15 20v2'/%3E%3Cpath d='M2 15h2'/%3E%3Cpath d='M2 9h2'/%3E%3Cpath d='M20 15h2'/%3E%3Cpath d='M20 9h2'/%3E%3Cpath d='M9 2v2'/%3E%3Cpath d='M9 20v2'/%3E%3C/svg%3E">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React ve ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        code, pre { font-family: 'JetBrains Mono', monospace; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        // --- DAHİLİ İKON KÜTÜPHANESİ (SVG) ---
+        const IconBase = ({ children, className, ...props }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className} 
+                {...props}
+            >
+                {children}
+            </svg>
+        );
+
+        const Icons = {
+            Terminal: (props) => <IconBase {...props}><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></IconBase>,
+            Save: (props) => <IconBase {...props}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></IconBase>,
+            Copy: (props) => <IconBase {...props}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></IconBase>,
+            Play: (props) => <IconBase {...props}><polygon points="5 3 19 12 5 21 5 3"/></IconBase>,
+            Download: (props) => <IconBase {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></IconBase>,
+            Code: (props) => <IconBase {...props}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></IconBase>,
+            Cpu: (props) => <IconBase {...props}><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></IconBase>,
+            Info: (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></IconBase>,
+            Check: (props) => <IconBase {...props}><polyline points="20 6 9 17 4 12"/></IconBase>,
+            AlertCircle: (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></IconBase>,
+            Ruler: (props) => <IconBase {...props}><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></IconBase>,
+            Layers: (props) => <IconBase {...props}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></IconBase>,
+            Hash: (props) => <IconBase {...props}><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></IconBase>,
+            BoxSelect: (props) => <IconBase {...props}><path d="M5 3a2 2 0 0 0-2 2"/><path d="M19 3a2 2 0 0 1 2 2"/><path d="M21 19a2 2 0 0 1-2 2"/><path d="M5 21a2 2 0 0 1-2-2"/><path d="M9 3h1"/><path d="M9 21h1"/><path d="M14 3h1"/><path d="M14 21h1"/><path d="M3 9v1"/><path d="M21 9v1"/><path d="M3 14v1"/><path d="M21 14v1"/></IconBase>,
+            MapPin: (props) => <IconBase {...props}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></IconBase>,
+            Table: (props) => <IconBase {...props}><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></IconBase>,
+            TrendingUp: (props) => <IconBase {...props}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></IconBase>,
+            Activity: (props) => <IconBase {...props}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></IconBase>,
+            ChevronDown: (props) => <IconBase {...props}><path d="m6 9 6 6 6-6"/></IconBase>,
+            ChevronUp: (props) => <IconBase {...props}><path d="m18 15-6-6-6 6"/></IconBase>,
+            Grid: (props) => <IconBase {...props}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="9" x2="9" y1="3" y2="21"/><line x1="15" x2="15" y1="3" y2="21"/></IconBase>,
+            FileText: (props) => <IconBase {...props}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></IconBase>,
+            FileOutput: (props) => <IconBase {...props}><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M4 7V4a2 2 0 0 1 2-2 2 2 0 0 0-2 2"/><path d="M4.063 20.999a2 2 0 0 0 2 1.999h9a2 2 0 0 0 2-1.999v-9.998a2 2 0 0 0-1.999-1.999H6.999a2 2 0 0 0-1.999 1.999Z"/><path d="m5 12-3 3 3 3"/><path d="M2 15h10"/></IconBase>,
+            Minimize2: (props) => <IconBase {...props}><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" x2="21" y1="10" y2="3"/><line x1="3" x2="10" y1="21" y2="14"/></IconBase>,
+            Calculator: (props) => <IconBase {...props}><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></IconBase>,
+            ArrowLeftRight: (props) => <IconBase {...props}><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></IconBase>,
+            ArrowUpFromLine: (props) => <IconBase {...props}><path d="m18 9-6-6-6 6"/><path d="M12 3v14"/><path d="M5 21h14"/></IconBase>,
+            Mail: (props) => <IconBase {...props}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></IconBase>,
+            Mic: (props) => <IconBase {...props}><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></IconBase>,
+            MicOff: (props) => <IconBase {...props}><line x1="2" x2="22" y1="2" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" x2="12" y1="19" y2="22"/></IconBase>,
+            BatteryCharging: (props) => <IconBase {...props}><path d="M15 7h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/><path d="M6 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1"/><path d="m11 7-3 5h4l-3 5"/><line x1="22" x2="22" y1="11" y2="13"/></IconBase>
+        };
+
+        const AutoLispGenerator = () => {
+            const [commandName, setCommandName] = useState('');
+            const [description, setDescription] = useState('');
+            const [generatedCode, setGeneratedCode] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+            const [error, setError] = useState('');
+            const [copied, setCopied] = useState(false);
+            
+            // Günlük Limit State'leri
+            const MAX_DAILY_LIMIT = 10;
+            const [remainingUsage, setRemainingUsage] = useState(MAX_DAILY_LIMIT);
+            
+            // Sesle Yazma State'leri
+            const [isListening, setIsListening] = useState(false);
+            const recognitionRef = useRef(null);
+            
+            // Şablonların görünürlüğünü kontrol eden state
+            const [showAllTemplates, setShowAllTemplates] = useState(false);
+
+            // Gemini API Key
+            const apiKey = "AIzaSyDoIUhi8EIsewCcV5Ft71SNXVF4fvDzGY4"; 
+
+            // Başlangıçta Limit Kontrolü
+            useEffect(() => {
+                const checkDailyLimit = () => {
+                const today = new Date().toLocaleDateString('tr-TR');
+                const storedData = localStorage.getItem('lisp_usage_stats');
+                
+                if (storedData) {
+                    const stats = JSON.parse(storedData);
+                    if (stats.date === today) {
+                    setRemainingUsage(Math.max(0, MAX_DAILY_LIMIT - stats.count));
+                    } else {
+                    localStorage.setItem('lisp_usage_stats', JSON.stringify({ date: today, count: 0 }));
+                    setRemainingUsage(MAX_DAILY_LIMIT);
+                    }
+                } else {
+                    localStorage.setItem('lisp_usage_stats', JSON.stringify({ date: today, count: 0 }));
+                    setRemainingUsage(MAX_DAILY_LIMIT);
+                }
+                };
+                
+                checkDailyLimit();
+            }, []);
+
+            // Kullanım Hakkını Düşürme Fonksiyonu
+            const decreaseUsageRight = () => {
+                const today = new Date().toLocaleDateString('tr-TR');
+                const storedData = localStorage.getItem('lisp_usage_stats');
+                let currentCount = 0;
+
+                if (storedData) {
+                const stats = JSON.parse(storedData);
+                currentCount = stats.count;
+                }
+
+                const newCount = currentCount + 1;
+                localStorage.setItem('lisp_usage_stats', JSON.stringify({ date: today, count: newCount }));
+                setRemainingUsage(Math.max(0, MAX_DAILY_LIMIT - newCount));
+            };
+
+            // Sesle Yazma Ayarları
+            useEffect(() => {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                
+                if (SpeechRecognition) {
+                recognitionRef.current = new SpeechRecognition();
+                recognitionRef.current.continuous = true;
+                recognitionRef.current.interimResults = true;
+                recognitionRef.current.lang = 'tr-TR';
+
+                recognitionRef.current.onresult = (event) => {
+                    let finalTranscript = '';
+
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    }
+                    }
+
+                    if (finalTranscript) {
+                    setDescription(prev => {
+                        const trailingSpace = prev.length > 0 && !prev.endsWith(' ') ? ' ' : '';
+                        return prev + trailingSpace + finalTranscript;
+                    });
+                    }
+                };
+
+                recognitionRef.current.onerror = (event) => {
+                    console.error("Ses hatası:", event.error);
+                    if (event.error === 'not-allowed') {
+                    setError('Mikrofon izni reddedildi. Lütfen tarayıcı ayarlarından izin verin.');
+                    setIsListening(false);
+                    }
+                };
+
+                recognitionRef.current.onend = () => {
+                    setIsListening(false);
+                };
+                }
+            }, []);
+
+            const toggleListening = () => {
+                if (!recognitionRef.current) {
+                setError("Tarayıcınız sesle yazmayı desteklemiyor. Chrome kullanmayı deneyin.");
+                return;
+                }
+
+                if (isListening) {
+                recognitionRef.current.stop();
+                setIsListening(false);
+                } else {
+                setError('');
+                try {
+                    recognitionRef.current.start();
+                    setIsListening(true);
+                } catch (err) {
+                    console.error("Mikrofon başlatılamadı:", err);
+                }
+                }
+            };
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                generateLispCode();
+                }
+            };
+
+            // Şablon Verileri (Toplam 14 Adet)
+            const templates = [
+                { id: 'ruler', label: 'Akıllı Cetvel', icon: Icons.Ruler, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'hover:border-indigo-500' },
+                { id: 'facade', label: 'Cephe Yaz', icon: Icons.ArrowLeftRight, color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10', border: 'hover:border-fuchsia-500' },
+                { id: 'interpolate', label: 'Ara Kot Bul', icon: Icons.Calculator, color: 'text-teal-400', bg: 'bg-teal-500/10', border: 'hover:border-teal-500' },
+                { id: 'write_z', label: 'Kot Yaz (Z)', icon: Icons.ArrowUpFromLine, color: 'text-sky-400', bg: 'bg-sky-500/10', border: 'hover:border-sky-500' },
+                { id: 'layers', label: 'Katman Metraj', icon: Icons.Layers, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'hover:border-emerald-500' },
+                { id: 'numbering', label: 'Oto Numara', icon: Icons.Hash, color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'hover:border-pink-500' },
+                { id: 'area', label: 'Toplam Alan', icon: Icons.BoxSelect, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'hover:border-amber-500' },
+                { id: 'z_zero', label: 'Z Sıfırla (Ütü)', icon: Icons.Minimize2, color: 'text-red-400', bg: 'bg-red-500/10', border: 'hover:border-red-500' },
+                { id: 'coords', label: 'Koord. Yaz', icon: Icons.MapPin, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'hover:border-cyan-500' },
+                { id: 'parceltable', label: 'Alan Tablosu', icon: Icons.Table, color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'hover:border-violet-500' },
+                { id: 'slope', label: 'Eğim Hesabı', icon: Icons.TrendingUp, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'hover:border-orange-500' },
+                { id: 'hatch', label: 'Şev Tarama', icon: Icons.Activity, color: 'text-lime-400', bg: 'bg-lime-500/10', border: 'hover:border-lime-500' },
+                { id: 'txt_import', label: 'TXT Nokta Oku', icon: Icons.FileText, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'hover:border-blue-500' },
+                { id: 'txt_export', label: 'TXT Nokta Yaz', icon: Icons.FileOutput, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'hover:border-rose-500' },
+            ];
+
+            const generateLispCode = async () => {
+                if (remainingUsage <= 0) {
+                setError('Günlük 10 adet LISP üretme hakkınız doldu. Yarın tekrar bekleriz!');
+                return;
+                }
+
+                if (!commandName || !description) {
+                setError('Lütfen hem komut adını hem de açıklamayı giriniz.');
+                return;
+                }
+
+                setIsLoading(true);
+                setError('');
+                setGeneratedCode('');
+                setCopied(false);
+
+                const systemPrompt = `
+                You are an expert AutoLISP developer for AutoCAD and ZWCAD. 
+                Your task is to generate valid, efficient, and well-commented AutoLISP (.lsp) code based on the user's requirements.
+                
+                RULES:
+                1. Define the function using c:${commandName} so it runs as a command.
+                2. Ensure proper variable localization (declare local variables inside the defun parenthesis).
+                3. Use standard AutoLISP functions compatible with both AutoCAD and ZWCAD.
+                4. Add comments in Turkish explaining what the code does step-by-step.
+                5. Include error handling (creating an *error* function) to restore system variables (like osmode, cmdecho) if the user cancels.
+                6. Do NOT use Markdown formatting (like \`\`\`lisp). Return ONLY the raw code text.
+                7. For length calculations, always handle both LINE and LWPOLYLINE/POLYLINE objects correctly.
+                8. CAD Interaction Logic: Remember that in CAD, users pick points with LEFT CLICK (getpoint). RIGHT CLICK usually means Enter/Finish. Design loops (while) accordingly.
+                `;
+
+                const userPrompt = `
+                Command Name: ${commandName}
+                Description of functionality: ${description}
+                
+                Write the complete AutoLISP code now.
+                `;
+
+                try {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                    {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userPrompt }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    }),
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error('API Hatası: Kod üretilemedi.');
+                }
+
+                const data = await response.json();
+                let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "; Kod üretilemedi.";
+                
+                rawText = rawText.replace(/```lisp/g, '').replace(/```/g, '').trim();
+
+                setGeneratedCode(rawText);
+                
+                decreaseUsageRight();
+
+                } catch (err) {
+                setError('Bir hata oluştu: ' + err.message);
+                } finally {
+                setIsLoading(false);
+                }
+            };
+
+            const copyToClipboard = () => {
+                if (!generatedCode) return;
+                const textArea = document.createElement("textarea");
+                textArea.value = generatedCode;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                } catch (err) {
+                    console.error('Kopyalama hatası', err);
+                }
+                document.body.removeChild(textArea);
+            };
+
+            const downloadLspFile = () => {
+                if (!generatedCode) return;
+                const element = document.createElement("a");
+                const file = new Blob([generatedCode], {type: 'text/plain'});
+                element.href = URL.createObjectURL(file);
+                element.download = `${commandName}.lsp`;
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+
+                setCommandName('');
+                setDescription('');
+                setGeneratedCode('');
+                setCopied(false);
+            };
+
+            const loadExample = (type) => {
+                // Şablonları bul ve yükle
+                const selectedTemplate = templates.find(t => t.id === type);
+                if(!selectedTemplate) return;
+
+                let desc = "";
+                let cmd = "";
+
+                // Basit bir switch yerine map kullanmak da olabilirdi ama okunaklılık için if/else
+                if (type === 'ruler') {
+                    cmd = 'akilli_cetvel';
+                    desc = 'Bir ölçüm aracı yap. Başlangıç noktasını sol tık ile seçeyim. Sonraki her sol tık yaptığımda, bir önceki nokta ile aradaki mesafeyi ölçsün ve "Parça: X.XX" olarak komut satırına yazsın. Arka planda bu mesafeleri toplasın. Enter tuşuna bastığımda (veya sağ tık yaptığımda) komut sonlansın ve o ana kadar ölçülen çizgilerin "TOPLAM UZUNLUĞU"nu belirgin şekilde yazsın.';
+                } else if (type === 'layers') {
+                    cmd = 'katman_metraj';
+                    desc = 'Ekranda bir seçim penceresi açarak (ssget) çizimleri seçmemi sağla. Seçtiğim alandaki tüm Line, Polyline ve LWPolyline çizgilerinin uzunluklarını hesapla. Ancak bunları Katmanlarına (Layer) göre gruplandır. Sonuç olarak komut satırına liste halinde: "Katman A: 50.00 birim", "Katman B: 120.50 birim" şeklinde döküm ver. En alta da tüm katmanların genel toplam uzunluğunu yaz.';
+                } else if (type === 'numbering') {
+                    cmd = 'oto_no';
+                    desc = 'Otomatik numaralandırma komutu. Önce benden bir başlangıç sayısı (tamsayı) ve yazı yüksekliği istesin. Sonra ekranda her sol tıkladığım noktaya bu sayıyı Text olarak yerleştirsin ve sayıyı otomatik olarak 1 arttırsın. Komuttan ESC veya Enter ile çıkana kadar numaralandırma devam etsin.';
+                } else if (type === 'area') {
+                    cmd = 'toplam_alan';
+                    desc = 'Çoklu alan hesabı. Seçim penceresi ile birden fazla kapalı Poligon (LWPolyline) seçmeme izin ver. Seçilen bu kapalı alanların her birinin alanını hesaplayıp topla. Sonucu metrekare (m2) cinsinden (çizimin cm olduğu varsayılarak) komut satırına ve ekrana bir Alert kutusu ile yazdır.';
+                } else if (type === 'coords') {
+                    cmd = 'kord_yaz';
+                    desc = 'Ekranda tıkladığım noktanın Koordinatlarını (Y ve X) al. Haritacılık standartlarına uygun olarak, önce Y (Sağa değer/Easting) değerini, altına X (Yukarı değer/Northing) değerini yazacak şekilde bir Leader (Ok) oluştur. Metin yüksekliğini kullanıcıya sor. Koordinatları virgülden sonra 3 hane hassasiyetle yaz.';
+                } else if (type === 'parceltable') {
+                    cmd = 'alan_tablo';
+                    desc = 'Otomatik Parsel Alan Tablosu. Ekranda seçim penceresi ile birden fazla kapalı Poligon (Parsel) seçeyim. Seçilen her bir parselin içine sıra numarası (1, 2, 3...) yaz. Ardından ekranda boş bir yere tıkladığımda oraya basit bir tablo çiz. Tabloda "Parsel No" ve "Alan (m2)" sütunları olsun. En alt satırda "TOPLAM ALAN" değeri yer alsın.';
+                } else if (type === 'slope') {
+                    cmd = 'egim_yaz';
+                    desc = 'İki nokta arası eğim hesabı. Benden 3 Boyutlu (Z değeri olan - Kotlu) iki nokta seçmemi iste. Bu iki nokta arasındaki Kot Farkını (Delta Z) ve Yatay Mesafeyi hesapla. Formül: (Kot Farkı / Yatay Mesafe) * 100. Sonucu "% [Değer]" formatında, virgülden sonra 2 hane olacak şekilde, iki noktanın tam ortasına Text olarak yazdır.';
+                } else if (type === 'hatch') {
+                    cmd = 'sev_tarama';
+                    desc = 'Basit Şev Taraması. Benden iki adet Poligon (veya Line) seçmemi iste: Biri "Üst Çizgi" (Şev Başı), diğeri "Alt Çizgi" (Şev Eteği). Kullanıcıdan bir tarama aralığı (mesafe) iste. Bu iki çizgi arasına, belirtilen aralıklarla dik çizgiler at. Çizgiler bir uzun (tam boy), bir kısa (yarım boy) olacak şekilde sıralansın (Şev sembolojisi).';
+                } else if (type === 'txt_import') {
+                    cmd = 'nokta_oku';
+                    desc = 'TXT dosyasından nokta içe aktar (Import). Kullanıcıdan bir dosya seçme penceresi açmasını iste (getfiled). Seçilen .txt dosyasını satır satır oku. Dosya formatının "NoktaNo Y(Sağa) X(Yukarı) Z(Kot)" şeklinde (boşluk veya tab ile ayrılmış) olduğunu varsay. Her satırdaki koordinata bir POINT (Nokta) objesi çiz. DİKKAT: Haritacılıkta Y önce gelir ama AutoCAD X,Y sırasında çalışır; bu yüzden okuduğun Y ve X değerlerinin yerini değiştirerek çizim yap. Ayrıca noktanın yanına "NOKTA_NO" layerında nokta numarasını, "KOT" layerında Z değerini yaz.';
+                } else if (type === 'txt_export') {
+                    cmd = 'nokta_yaz';
+                    desc = 'Koordinat dışa aktar (Export). Ekranda seçilen Nokta (Point) veya Blok objelerinin koordinatlarını al. Kullanıcının belirleyeceği bir .txt dosyasına "NoktaNo Y(Sağa) X(Yukarı) Z(Kot)" formatında yazdır. Haritacılık standardı gereği önce Y, sonra X yazılmalı.';
+                } else if (type === 'z_zero') {
+                    cmd = 'z_sifir';
+                    desc = '3 Boyutlu çizgileri 2 Boyuta indirme (Flatten). Ekranda seçilen tüm nesnelerin (Line, Polyline, Arc, Circle, Point) Z (Elevation) değerlerini 0.0 yap. Özellikle "Start Z" ve "End Z" değerlerini sıfırlayarak çizimi tamamen "ütüle". Bu sayede 3B gelen dosyalarla çalışmak kolaylaşsın.';
+                } else if (type === 'interpolate') {
+                    cmd = 'ara_kot';
+                    desc = 'Matematiksel Enterpolasyon (Ara Değer Bulma). Benden kotlu (Z değeri olan) iki nokta (Point) seçmemi iste. Bu iki noktanın Z değerlerini oku. Sonra benden "Aranan Kot Değeri"ni girmemi iste. Bu iki nokta arasındaki eğimi hesaplayarak, girdiğim kotun bu doğru üzerinde tam olarak nereye denk geldiğini bul ve oraya yeni bir Point (Nokta) at. Noktanın Z değerini de hesaplanan kot yap.';
+                } else if (type === 'facade') {
+                    cmd = 'cephe_yaz';
+                    desc = 'Otomatik Cephe Yazısı (NetCAD Stili). Benden bir Poligon (LWPolyline) seçmemi iste. Bu poligonun her bir kenar uzunluğunu hesapla ve kenarın tam ortasına, kenara paralel (hizalı) olacak şekilde Text olarak yazdır. Yazıları çizginin biraz dışına ötele ki çizginin üstüne binmesin. Yazı yüksekliğini sor. Uzunlukları 2 ondalık hane ile yaz.';
+                } else if (type === 'write_z') {
+                    cmd = 'kot_yaz';
+                    desc = 'Kot (Z) Değerini Yazıya Çevir. Ekranda seçilen Point (Nokta) objelerinin (veya Polyline köşelerinin) Z (Elevation) değerini oku. Bu değeri, noktanın hemen yanına Text (Yazı) objesi olarak yazdır. Yazı yüksekliğini kullanıcıya sor. Kot değerini 2 ondalık hane hassasiyetle yaz.';
+                }
+
+                setCommandName(cmd);
+                setDescription(desc);
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-900 text-slate-200 font-sans selection:bg-indigo-500 selection:text-white">
+                {/* Header */}
+                <header className="bg-slate-800 border-b border-slate-700 shadow-lg sticky top-0 z-10">
+                    <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-indigo-600 p-2 rounded-lg">
+                        <Icons.Cpu className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                        <h1 className="text-xl font-bold text-white tracking-wide">LispGenerator</h1>
+                        </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                        {/* Günlük Limit Göstergesi */}
+                        <div className={`hidden md:flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded border transition-all ${
+                        remainingUsage === 0 
+                            ? 'text-red-400 bg-red-900/30 border-red-500/30' 
+                            : 'text-emerald-400 bg-emerald-900/30 border-emerald-500/30'
+                        }`}>
+                        <Icons.BatteryCharging className="w-3.5 h-3.5" />
+                        <span>Günlük Hak: {remainingUsage}/{MAX_DAILY_LIMIT}</span>
+                        </div>
+
+                        <div className="hidden md:flex text-xs font-mono text-indigo-400 bg-indigo-900/30 px-3 py-1.5 rounded border border-indigo-500/30">
+                        v1.9.0
+                        </div>
+                    </div>
+                    </div>
+                </header>
+
+                <main className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    {/* Left Column: Input Form */}
+                    <div className="lg:col-span-1 space-y-6">
+                    <div className="bg-slate-800 rounded-xl p-6 shadow-xl border border-slate-700">
+                        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <Icons.Terminal className="w-5 h-5 text-indigo-400" />
+                        Komut Tanımlama
+                        </h2>
+                        
+                        <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-400 mb-1">
+                            Komut Adı
+                            </label>
+                            <div className="relative">
+                            <span className="absolute left-3 top-2.5 text-slate-500 font-mono">c:</span>
+                            <input
+                                type="text"
+                                value={commandName}
+                                onChange={(e) => setCommandName(e.target.value.replace(/\s/g, '_'))}
+                                className="w-full bg-slate-900 border border-slate-600 rounded-lg py-2 pl-8 pr-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none font-mono placeholder-slate-600 transition-all"
+                                placeholder="komut_adi"
+                            />
+                            </div>
+                        </div>
+
+                        {/* Collapsible Templates Section (The Bubble) */}
+                        <div className="bg-slate-900/50 rounded-lg border border-slate-700/50 overflow-hidden transition-all duration-300">
+                            <button 
+                            onClick={() => setShowAllTemplates(!showAllTemplates)}
+                            className="w-full flex items-center justify-between px-3 py-2 bg-slate-800/80 hover:bg-slate-700 transition-colors"
+                            >
+                            <div className="flex items-center gap-2">
+                                <Icons.Grid className="w-4 h-4 text-indigo-400" />
+                                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                                Hızlı Şablonlar ({templates.length})
+                                </span>
+                            </div>
+                            {showAllTemplates ? (
+                                <Icons.ChevronUp className="w-4 h-4 text-slate-500" />
+                            ) : (
+                                <Icons.ChevronDown className="w-4 h-4 text-slate-500" />
+                            )}
+                            </button>
+                            
+                            <div className="p-2 bg-slate-900/30">
+                            <div className={`grid gap-2 transition-all duration-300 ${showAllTemplates ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2'}`}>
+                                {templates.slice(0, showAllTemplates ? templates.length : 2).map((item) => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => loadExample(item.id)}
+                                    className={`flex flex-col items-center justify-center p-2 rounded bg-slate-800 border border-slate-700/50 ${item.border} hover:bg-slate-700 transition-all group h-14`}
+                                    title={item.label}
+                                >
+                                    <div className={`p-1 rounded-md mb-1 ${item.bg}`}>
+                                        {React.createElement(item.icon, { className: `w-3.5 h-3.5 ${item.color} group-hover:scale-110 transition-transform` })}
+                                    </div>
+                                    <span className="text-[10px] font-medium text-slate-400 group-hover:text-slate-200 text-center leading-tight truncate w-full">
+                                    {item.label}
+                                    </span>
+                                </button>
+                                ))}
+                            </div>
+                            
+                            {!showAllTemplates && (
+                                <div className="mt-1 text-center">
+                                <button 
+                                    onClick={() => setShowAllTemplates(true)}
+                                    className="text-[10px] text-slate-500 hover:text-indigo-400 transition-colors"
+                                >
+                                    + {templates.length - 2} şablon daha göster
+                                </button>
+                                </div>
+                            )}
+                            </div>
+                        </div>
+
+                        <div className="relative">
+                            <div className="flex items-center justify-between mb-1">
+                            <label className="block text-sm font-medium text-slate-400">
+                                İşlev Açıklaması
+                            </label>
+                            <button
+                                onClick={toggleListening}
+                                className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-all ${
+                                isListening 
+                                    ? 'bg-red-500/20 text-red-400 border border-red-500/50 animate-pulse' 
+                                    : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-indigo-400 hover:border-indigo-500/50'
+                                }`}
+                                title={isListening ? "Dinlemeyi Durdur" : "Sesle Yaz (Mikrofon)"}
+                            >
+                                {isListening ? (
+                                <>
+                                    <Icons.MicOff className="w-3.5 h-3.5" />
+                                    <span className="hidden sm:inline">Durdur</span>
+                                </>
+                                ) : (
+                                <>
+                                    <Icons.Mic className="w-3.5 h-3.5" />
+                                    <span className="hidden sm:inline">Sesle Yaz</span>
+                                </>
+                                )}
+                            </button>
+                            </div>
+                            <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            className={`w-full h-40 bg-slate-900 border rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none placeholder-slate-600 transition-all text-sm leading-relaxed ${
+                                isListening ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'border-slate-600'
+                            }`}
+                            placeholder={isListening ? "Sizi dinliyorum... Konuşun..." : "Komutun ne yapması gerektiğini buraya yazın veya yukarıdaki hızlı örneklerden birini seçin. (Enter tuşu kodu üretir)"}
+                            />
+                            {isListening && (
+                            <div className="absolute bottom-3 right-3 flex gap-1">
+                                <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-bounce"></div>
+                            </div>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={generateLispCode}
+                            disabled={isLoading || remainingUsage <= 0}
+                            className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold text-white transition-all shadow-lg mt-2 ${
+                            isLoading || remainingUsage <= 0
+                                ? 'bg-slate-700 cursor-not-allowed' 
+                                : 'bg-indigo-600 hover:bg-indigo-500 hover:shadow-indigo-500/25 active:scale-[0.98]'
+                            }`}
+                        >
+                            {isLoading ? (
+                            <>
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Kodlanıyor...
+                            </>
+                            ) : remainingUsage <= 0 ? (
+                            <>
+                                <Icons.AlertCircle className="w-5 h-5" />
+                                Günlük Limit Doldu
+                            </>
+                            ) : (
+                            <>
+                                <Icons.Play className="w-5 h-5 fill-current" />
+                                LISP Oluştur
+                            </>
+                            )}
+                        </button>
+
+                        {error && (
+                            <div className="bg-red-900/50 border border-red-500/50 text-red-200 p-3 rounded-lg text-sm flex items-start gap-2">
+                            <Icons.AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                            {error}
+                            </div>
+                        )}
+                        </div>
+                    </div>
+                    </div>
+
+                    {/* Right Column: Code Output */}
+                    <div className="lg:col-span-2 flex flex-col h-full">
+                    <div className="bg-slate-800 rounded-xl shadow-xl border border-slate-700 flex flex-col flex-grow overflow-hidden relative min-h-[500px]">
+                        
+                        {/* Toolbar - Redesigned for High Visibility */}
+                        <div className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-700">
+                        <div className="flex items-center gap-2">
+                            <Icons.Code className="w-5 h-5 text-emerald-500" />
+                            <span className="font-mono text-sm text-slate-300">
+                            {commandName ? `${commandName}.lsp` : 'untitled.lsp'}
+                            </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                            {/* Copy Button */}
+                            <button
+                            onClick={copyToClipboard}
+                            disabled={!generatedCode}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all border ${
+                                copied 
+                                ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400' 
+                                : 'bg-slate-700/50 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                            {copied ? <Icons.Check className="w-4 h-4" /> : <Icons.Copy className="w-4 h-4" />}
+                            <span>{copied ? 'Kopyalandı' : 'Kopyala'}</span>
+                            </button>
+
+                            {/* Download Button - Primary Action */}
+                            <button
+                            onClick={downloadLspFile}
+                            disabled={!generatedCode}
+                            className="flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-900/20 hover:shadow-indigo-500/30 border border-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                            >
+                            <Icons.Download className="w-4 h-4" />
+                            <span>.LSP İndir</span>
+                            </button>
+                        </div>
+                        </div>
+
+                        {/* Editor Area */}
+                        <div className="relative flex-grow bg-[#0f172a] overflow-auto custom-scrollbar">
+                        {!generatedCode ? (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-600 p-8 text-center">
+                            <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mb-4 animate-pulse">
+                                <Icons.Terminal className="w-10 h-10 text-slate-500" />
+                            </div>
+                            <p className="text-lg font-medium text-slate-400 mb-2">Kod Oluşturulmayı Bekliyor</p>
+                            <p className="text-sm max-w-md">
+                                Sol taraftan bir örnek şablon seçin veya kendi komutunuzu tarif edin.
+                            </p>
+                            </div>
+                        ) : (
+                            <pre className="p-4 text-sm font-mono leading-relaxed tab-4">
+                            <code className="block text-slate-300 whitespace-pre-wrap">
+                                {generatedCode.split('\n').map((line, i) => (
+                                <div key={i} className="table-row">
+                                    <span className="table-cell text-right pr-4 select-none text-slate-700 w-8 border-r border-slate-800 mr-4">
+                                    {i + 1}
+                                    </span>
+                                    <span className="table-cell pl-4">
+                                    {line.startsWith(';') ? (
+                                        <span className="text-slate-500 italic">{line}</span>
+                                    ) : (
+                                        <span dangerouslySetInnerHTML={{
+                                        __html: line
+                                            .replace(/\(/g, '<span class="text-indigo-400">(</span>')
+                                            .replace(/\)/g, '<span class="text-indigo-400">)</span>')
+                                            .replace(/\b(defun|setq|command|if|progn|princ|while|foreach)\b/g, '<span class="text-pink-400 font-semibold">$1</span>')
+                                            .replace(/\b(c:[a-zA-Z0-9_]+)\b/g, '<span class="text-yellow-300">$1</span>')
+                                        }} />
+                                    )}
+                                    </span>
+                                </div>
+                                ))}
+                            </code>
+                            </pre>
+                        )}
+                        </div>
+                        
+                        {/* Footer Status */}
+                        <div className="bg-slate-900 border-t border-slate-700 px-4 py-2 text-xs text-slate-500 flex justify-between">
+                        <span>
+                            {generatedCode ? `${generatedCode.split('\n').length} satır kod üretildi` : 'Hazır'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <Icons.Info className="w-3 h-3" /> AutoCAD 2010+ ve ZWCAD uyumlu
+                        </span>
+                        </div>
+                    </div>
+                    
+                    {/* Guide / Instructions */}
+                    <div className="mt-6 bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                        <h4 className="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
+                        <Icons.Save className="w-4 h-4" />
+                        Nasıl Kullanılır?
+                        </h4>
+                        <ol className="text-xs text-slate-400 space-y-1 ml-5 list-decimal">
+                        <li>LISP dosyasını <strong>İndir</strong> butonuyla bilgisayarınıza kaydedin.</li>
+                        <li>AutoCAD veya ZWCAD programını açın.</li>
+                        <li>Komut satırına <code className="bg-slate-700 px-1 py-0.5 rounded text-indigo-300">APPLOAD</code> yazın ve Enter'a basın.</li>
+                        <li>İndirdiğiniz <strong>.lsp</strong> dosyasını seçip "Load" (Yükle) butonuna tıklayın.</li>
+                        <li>Artık komut satırına belirlediğiniz komut adını (örn: <code className="bg-slate-700 px-1 py-0.5 rounded text-yellow-500">{commandName || 'komut_adi'}</code>) yazarak kullanabilirsiniz.</li>
+                        </ol>
+                    </div>
+
+                    {/* Developer Credits */}
+                    <div className="mt-8 pt-4 border-t border-slate-800/50 flex flex-col items-center justify-center gap-1">
+                        <span className="text-sm font-medium text-slate-400 tracking-wide">İsa Bektaş</span>
+                        <a 
+                        href="mailto:bektaas@outlook.com" 
+                        className="text-xs text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-1.5 group cursor-pointer hover:underline"
+                        >
+                            <Icons.Mail className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                            bektaas@outlook.com
+                        </a>
+                    </div>
+
+                    </div>
+                </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AutoLispGenerator />);
+    </script>
+</body>
+</html>
